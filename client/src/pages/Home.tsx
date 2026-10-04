@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+// src/pages/Home.tsx
+
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFetch } from '../hooks/useFetch';
@@ -13,7 +14,6 @@ import { formatClock, timeAgo } from '../lib/format';
 import { watchUrl } from '../lib/youtube';
 import type { HistoryItem, PublicUser, RoomCardData } from '../lib/types';
 
-// --- ULTRA-PRO DASHBOARD CSS ---
 const dashboardStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 
@@ -48,7 +48,6 @@ const dashboardStyles = `
     padding-bottom: 60px;
   }
 
-  /* Glass Section Containers */
   .dash-section {
     display: flex;
     flex-direction: column;
@@ -80,7 +79,6 @@ const dashboardStyles = `
     color: #a5b4fc;
   }
 
-  /* Ultra Hero Welcome Banner */
   .dash-welcome-card {
     position: relative;
     border-radius: 28px;
@@ -154,14 +152,12 @@ const dashboardStyles = `
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
   }
 
-  /* Grid Layout Extensions */
   .dash-grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
   }
 
-  /* Watched With / Friends Row */
   .dash-people-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -184,7 +180,6 @@ const dashboardStyles = `
     transform: translateY(-2px);
   }
 
-  /* Recently Watched Card Customization */
   .dash-history-card {
     border-radius: 20px;
     background: var(--dash-card);
@@ -246,7 +241,6 @@ function Section({ title, to, children, action }: { title: string; to?: string; 
 export default function Home() {
   const { user } = useAuth();
   const openCreate = useCreateRoom();
-  const [quickCode, setQuickCode] = useState('');
 
   useEffect(() => { 
     document.title = 'Home · MovieFlex Watch Party'; 
@@ -256,13 +250,6 @@ export default function Home() {
   const mine = useFetch<{ rooms: RoomCardData[] }>('/rooms/mine');
   const hist = useFetch<{ items: HistoryItem[] }>('/history?limit=6');
   const friends = useFetch<{ friends: (PublicUser & { sharedRooms: number })[] }>('/users/friends');
-
-  const handleQuickJoin = (e: FormEvent) => {
-    e.preventDefault();
-    if (quickCode.trim()) {
-      window.location.href = `/room/${quickCode.trim().toUpperCase()}`;
-    }
-  };
 
   return (
     <div className="dash-root">
