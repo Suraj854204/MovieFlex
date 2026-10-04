@@ -40,7 +40,7 @@ const FAQS = [
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 const ultraStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
   :root {
     --bg-base: #03050c;
@@ -62,8 +62,9 @@ const ultraStyles = `
     --grad-glow: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.3) 50%, rgba(6, 182, 212, 0.4) 100%);
     --grad-cyan: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
     
-    --font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Sora', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
   .mf-ultra-root, .mf-ultra-root * { box-sizing: border-box; }
@@ -76,6 +77,10 @@ const ultraStyles = `
     overflow-x: clip;
     position: relative;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-size: 16px;
+    line-height: 1.55;
   }
 
   .mf-ambient-bg {
@@ -115,9 +120,17 @@ const ultraStyles = `
   .mf-ultra-root h1, .mf-ultra-root h2, .mf-ultra-root h3 {
     font-family: var(--font-heading);
     font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    text-wrap: balance;
   }
+  .mf-ultra-root h2 {
+    font-size: clamp(30px, 4.2vw, 52px);
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+  }
+  .mf-ultra-root h3 { letter-spacing: -0.02em; }
+  .mf-ultra-root p { text-wrap: pretty; }
   .mf-gradient-text {
     background: var(--grad-primary);
     -webkit-background-clip: text;
@@ -167,6 +180,7 @@ const ultraStyles = `
     border-radius: 999px;
     font-size: 14px;
     font-weight: 600;
+    letter-spacing: -0.005em;
     color: var(--text-secondary);
     transition: all 0.2s;
   }
@@ -187,6 +201,7 @@ const ultraStyles = `
     font-family: var(--font-heading);
     font-weight: 700;
     font-size: 15px;
+    letter-spacing: -0.01em;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     border: 1px solid transparent;
@@ -228,6 +243,7 @@ const ultraStyles = `
     border: 1px solid rgba(129, 140, 248, 0.3);
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.01em;
     color: #c7d2fe;
     margin-bottom: 28px;
   }
@@ -242,17 +258,21 @@ const ultraStyles = `
     letter-spacing: 0.05em;
   }
   .mf-hero-title {
-    font-size: clamp(48px, 7.5vw, 92px);
-    max-width: 15ch;
-    margin: 0 auto 24px;
-    letter-spacing: -0.04em;
+    font-size: clamp(42px, 7vw, 88px);
+    font-weight: 800;
+    max-width: 16ch;
+    margin: 0 auto 26px;
+    letter-spacing: -0.05em;
+    line-height: 1.02;
   }
   .mf-hero-desc {
     font-size: clamp(17px, 1.8vw, 21px);
     color: var(--text-secondary);
-    max-width: 60ch;
+    max-width: 58ch;
     margin: 0 auto 40px;
-    line-height: 1.6;
+    line-height: 1.65;
+    font-weight: 500;
+    letter-spacing: -0.005em;
   }
 
   .mf-stats-container {
@@ -268,16 +288,19 @@ const ultraStyles = `
   }
   .mf-stat-box b {
     display: block;
-    font-size: clamp(24px, 3vw, 36px);
+    font-size: clamp(24px, 3vw, 38px);
     font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
     color: #fff;
   }
   .mf-stat-box span {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.09em;
   }
 
   .mf-app-frame-wrap {
@@ -315,6 +338,7 @@ const ultraStyles = `
     flex-direction: column;
     gap: 16px;
   }
+  .mf-mono { font-family: var(--font-mono); letter-spacing: 0; }
   .mf-sidebar-label {
     font-size: 11px;
     font-weight: 800;
@@ -694,7 +718,7 @@ export default function Landing() {
                 <div className="mf-player-header">
                   <div>
                     <h3 style={{ fontSize: '16px' }}>Friday Night Party</h3>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Room Code: DEMO26</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Room Code: <span className="mf-mono">DEMO26</span></span>
                   </div>
                   <div className="mf-sync-badge">
                     <div className="mf-sync-dot" />
@@ -722,7 +746,7 @@ export default function Landing() {
                 {/* Scrubber Controls */}
                 <div style={{ marginTop: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    <span>{fmtTime(time)}</span>
+                    <span className="mf-mono">{fmtTime(time)}</span>
                     <input 
                       type="range" 
                       min={0} 
@@ -731,7 +755,7 @@ export default function Landing() {
                       onChange={(e) => setTime(Number(e.target.value))}
                       style={{ flex: 1, accentColor: '#6366f1', cursor: 'pointer' }} 
                     />
-                    <span>{fmtTime(TOTAL_DURATION)}</span>
+                    <span className="mf-mono">{fmtTime(TOTAL_DURATION)}</span>
                   </div>
 
                   {/* Reaction Toolbar */}
@@ -881,9 +905,7 @@ export default function Landing() {
             </div>
 
             <div style={{ padding: '40px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', minHeight: '280px', display: 'grid', placeItems: 'center' }}>
-              {tab === 0 && <div><h4>Room Config Sandbox ({device})</h4></div>}
-              {tab === 1 && <div><h4>Link Relay Ready ({device})</h4></div>}
-              {tab === 2 && <div><h4>Playback Synced!</h4></div>}
+              <StepPreview tab={tab} device={device} />
             </div>
           </div>
         </section>
@@ -938,6 +960,116 @@ export default function Landing() {
       )}
     </div>
   );
+}
+
+/* ── ADDED: realistic app mockups for the "Cross Platform" steps (replaces the earlier StepPreview) ── */
+type Dev = 'desktop' | 'mobile' | 'tv';
+
+function DeviceFrame({ device, children }: { device: Dev; children: React.ReactNode }) {
+  const shadow = '0 24px 60px rgba(0,0,0,0.55)';
+  if (device === 'mobile') {
+    return (
+      <div style={{ width: 252, margin: '0 auto', padding: 8, borderRadius: 36, background: '#0b0f1c', border: '2px solid rgba(255,255,255,0.14)', boxShadow: shadow }}>
+        <div style={{ width: 64, height: 6, borderRadius: 9, background: 'rgba(255,255,255,0.18)', margin: '2px auto 8px' }} />
+        <div style={{ borderRadius: 26, background: '#070a14', padding: 12, minHeight: 330, overflow: 'hidden' }}>{children}</div>
+      </div>
+    );
+  }
+  if (device === 'tv') {
+    return (
+      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto' }}>
+        <div style={{ padding: 8, borderRadius: 14, background: '#0b0f1c', border: '2px solid rgba(255,255,255,0.14)', boxShadow: shadow }}>
+          <div style={{ borderRadius: 8, background: '#070a14', padding: 18, minHeight: 300, overflow: 'hidden' }}>{children}</div>
+        </div>
+        <div style={{ width: 110, height: 8, margin: '0 auto', background: 'rgba(255,255,255,0.14)', borderRadius: '0 0 10px 10px' }} />
+      </div>
+    );
+  }
+  return (
+    <div style={{ width: '100%', maxWidth: 470, margin: '0 auto', borderRadius: 14, background: '#070a14', border: '1px solid rgba(255,255,255,0.12)', boxShadow: shadow, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--glass-border)' }}>
+        {['#f87171', '#fbbf24', '#34d399'].map((c) => <span key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}
+        <span style={{ flex: 1, marginLeft: 8, padding: '4px 12px', borderRadius: 99, background: 'rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>movieflex / room / K7P4QX</span>
+      </div>
+      <div style={{ padding: 18, minHeight: 300 }}>{children}</div>
+    </div>
+  );
+}
+
+function StepPreview({ tab, device }: { tab: number; device: Dev }) {
+  const small = device === 'mobile';
+  const lbl: React.CSSProperties = { display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 };
+  const input: React.CSSProperties = { padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+  const primary: React.CSSProperties = { padding: '10px 14px', borderRadius: 10, background: 'var(--grad-primary)', color: '#fff', fontSize: 12, fontWeight: 800, textAlign: 'center', fontFamily: 'var(--font-heading)' };
+  const avatar = (n: string, bg: string, i: number): React.ReactNode => (
+    <span key={n} style={{ width: 26, height: 26, marginLeft: i ? -8 : 0, borderRadius: '50%', background: bg, border: '2px solid #070a14', display: 'inline-grid', placeItems: 'center', fontSize: 11, fontWeight: 800, color: '#000' }}>{n}</span>
+  );
+
+  let body: React.ReactNode;
+
+  if (tab === 0) {
+    body = (
+      <div>
+        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Create a watch room</div>
+        <span style={lbl}>Room name</span>
+        <div style={input}>Friday movie night</div>
+        <span style={lbl}>YouTube link</span>
+        <div style={{ ...input, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 44, height: 26, borderRadius: 6, background: 'linear-gradient(135deg,#312e81,#0f172a)', flex: 'none', display: 'grid', placeItems: 'center', fontSize: 10, color: '#fff' }}>▶</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>youtube.com/watch?v=…</span>
+        </div>
+        <span style={lbl}>Visibility</span>
+        <div style={{ display: 'flex', gap: 6, padding: 4, borderRadius: 12, background: 'rgba(255,255,255,0.05)', marginBottom: 12 }}>
+          <span style={{ flex: 1, textAlign: 'center', padding: '7px 0', borderRadius: 9, background: 'var(--accent-violet)', fontSize: 12, fontWeight: 700 }}>Public</span>
+          <span style={{ flex: 1, textAlign: 'center', padding: '7px 0', fontSize: 12, color: 'var(--text-muted)' }}>Private</span>
+        </div>
+        <div style={primary}>Create room</div>
+      </div>
+    );
+  } else if (tab === 1) {
+    body = (
+      <div>
+        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Friday movie night</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>Invite friends to join</div>
+        <span style={lbl}>Room code</span>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+          {'K7P4QX'.split('').map((c, i) => (
+            <span key={i} style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 9, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--glass-border)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: small ? 14 : 17 }}>{c}</span>
+          ))}
+        </div>
+        <span style={lbl}>Invite link</span>
+        <div style={input}>movieflex.example/room/K7P4QX</div>
+        <div style={primary}>Copy invite link</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, fontSize: 11, color: 'var(--text-muted)' }}>
+          <span>{avatar('H', '#ff758c', 0)}{avatar('J', '#f6d365', 1)}{avatar('M', '#2dd4bf', 2)}</span>
+          3 joined
+        </div>
+      </div>
+    );
+  } else {
+    body = (
+      <div>
+        <div style={{ aspectRatio: '16/9', borderRadius: 12, background: 'radial-gradient(ellipse at center, #312e81 0%, #090d16 100%)', position: 'relative', display: 'grid', placeItems: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', display: 'grid', placeItems: 'center', fontSize: 16 }}>▶</span>
+          <span style={{ position: 'absolute', left: 10, right: 10, bottom: 10, height: 4, borderRadius: 9, background: 'rgba(255,255,255,0.15)' }}>
+            <span style={{ display: 'block', width: '38%', height: '100%', borderRadius: 9, background: 'var(--grad-primary)' }} />
+          </span>
+          <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 18 }}>🔥</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0' }}>
+          <span className="mf-sync-badge" style={{ padding: '4px 10px', fontSize: 11 }}><span className="mf-sync-dot" /> In sync</span>
+          <span>{avatar('H', '#ff758c', 0)}{avatar('J', '#f6d365', 1)}{avatar('M', '#2dd4bf', 2)}</span>
+        </div>
+        {[['Jamie', 'No way, rewind that!'], ['Maya', 'Same timestamp for all of us 😂']].map(([who, msg]) => (
+          <div key={who} style={{ fontSize: 11, padding: '7px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', marginBottom: 6 }}>
+            <b style={{ color: '#a5b4fc' }}>{who}</b> <span style={{ color: 'var(--text-secondary)' }}>{msg}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <DeviceFrame device={device}>{body}</DeviceFrame>;
 }
 
 function icon(name: IconName) {
