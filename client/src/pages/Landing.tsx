@@ -1,10 +1,11 @@
+// src/pages/Landing.tsx
+
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent, MouseEvent } from 'react';
+import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/ui/Logo';
 import { Icon, type IconName } from '../components/ui/Icon';
 
-// --- CONSTANTS & DATA ---
 const FRIENDS = [
   { name: 'Jamie', color: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', avatarBg: '#ff758c' },
   { name: 'Alex', color: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', avatarBg: '#f6d365' },
@@ -38,7 +39,6 @@ const FAQS = [
 
 const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-// --- ULTRA-PRO MAX DESIGN SYSTEM CSS ---
 const ultraStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
@@ -78,7 +78,6 @@ const ultraStyles = `
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Ultra Background Engine */
   .mf-ambient-bg {
     position: absolute;
     inset: 0;
@@ -113,7 +112,6 @@ const ultraStyles = `
     -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 100%);
   }
 
-  /* Typography */
   .mf-ultra-root h1, .mf-ultra-root h2, .mf-ultra-root h3 {
     font-family: var(--font-heading);
     font-weight: 700;
@@ -127,7 +125,6 @@ const ultraStyles = `
     color: transparent;
   }
 
-  /* Layout Structure */
   .mf-container {
     position: relative;
     z-index: 1;
@@ -137,7 +134,6 @@ const ultraStyles = `
     padding: 0 clamp(20px, 4vw, 48px);
   }
 
-  /* Navigation Bar */
   .mf-navbar {
     position: sticky;
     top: 0;
@@ -179,7 +175,6 @@ const ultraStyles = `
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* Buttons & Inputs */
   .mf-btn-ultra {
     position: relative;
     display: inline-flex;
@@ -219,7 +214,6 @@ const ultraStyles = `
     transform: translateY(-2px);
   }
 
-  /* Hero Section */
   .mf-hero-section {
     padding: clamp(60px, 8vw, 110px) 0 40px;
     text-align: center;
@@ -261,7 +255,6 @@ const ultraStyles = `
     line-height: 1.6;
   }
 
-  /* Live Stats Showcase */
   .mf-stats-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -287,7 +280,6 @@ const ultraStyles = `
     letter-spacing: 0.05em;
   }
 
-  /* Ultra Interactive App Mockup */
   .mf-app-frame-wrap {
     margin-top: clamp(60px, 8vw, 100px);
     position: relative;
@@ -315,7 +307,6 @@ const ultraStyles = `
     text-align: left;
   }
 
-  /* App Sidebar Left */
   .mf-app-sidebar {
     padding: 24px 20px;
     border-right: 1px solid var(--glass-border);
@@ -367,7 +358,6 @@ const ultraStyles = `
     border: 2px solid #000;
   }
 
-  /* App Main Player */
   .mf-app-player {
     padding: 24px;
     display: flex;
@@ -400,7 +390,6 @@ const ultraStyles = `
     box-shadow: 0 0 12px var(--accent-teal);
   }
 
-  /* Screen Canvas */
   .mf-video-screen {
     position: relative;
     aspect-ratio: 16/9;
@@ -437,7 +426,6 @@ const ultraStyles = `
     background: rgba(255, 255, 255, 0.35);
   }
 
-  /* Chat Sidebar Right */
   .mf-app-chat {
     padding: 24px 20px;
     border-left: 1px solid var(--glass-border);
@@ -462,7 +450,6 @@ const ultraStyles = `
     line-height: 1.5;
   }
 
-  /* Features Bento Grid */
   .mf-bento-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -488,7 +475,6 @@ const ultraStyles = `
   .mf-col-2 { grid-column: span 2; }
   .mf-col-3 { grid-column: span 3; }
 
-  /* Device Selector Extra Feature */
   .mf-device-bar {
     display: flex;
     justify-content: center;
@@ -513,7 +499,6 @@ const ultraStyles = `
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
   }
 
-  /* FAQ Accordion */
   .mf-faq-grid {
     display: grid;
     grid-template-columns: 0.8fr 1.2fr;
@@ -539,7 +524,6 @@ const ultraStyles = `
     cursor: pointer;
   }
 
-  /* Responsive Design Adjustments */
   @media (max-width: 1080px) {
     .mf-app-frame { grid-template-columns: 1fr; }
     .mf-app-sidebar { display: none; }
@@ -557,7 +541,6 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(1840);
-  const [muted, setMuted] = useState(false);
   const [device, setDevice] = useState<'desktop' | 'mobile' | 'tv'>('desktop');
   const [chat, setChat] = useState([
     { who: 'Jamie', text: 'That plot twist at the end! 😭' },
@@ -930,7 +913,7 @@ export default function Landing() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '80px 0 120px', textAlignment: 'center' }}>
+        <section style={{ padding: '80px 0 120px', textAlign: 'center' }}>
           <div style={{ padding: '60px 40px', borderRadius: '32px', background: 'radial-gradient(ellipse at top, rgba(99,102,241,0.25) 0%, rgba(3,5,12,1) 100%)', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
             <h2 style={{ fontSize: 'clamp(36px, 5vw, 64px)', marginBottom: '20px' }}>Ready for your next movie night?</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '18px', marginBottom: '32px' }}>Spin up a private room in under 10 seconds.</p>
@@ -949,7 +932,7 @@ export default function Landing() {
 
       {/* Toast Notification */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', padding: '14px 24px', borderRadius: '12px', background: '#fff', color: '#000', fontWeight: 700, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zindex: 1000 }}>
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', padding: '14px 24px', borderRadius: '12px', background: '#fff', color: '#000', fontWeight: 700, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 1000 }}>
           {toast}
         </div>
       )}
