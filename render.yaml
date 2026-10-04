@@ -1,0 +1,13 @@
+# Example Render blueprint: single service (Express serves the built client). Set secrets in the dashboard.
+services:
+  - type: web
+    name: movieflex
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: SERVE_CLIENT, value: "true" }
+      - { key: DATABASE_URL, sync: false }
+      - { key: SESSION_SECRET, sync: false }
