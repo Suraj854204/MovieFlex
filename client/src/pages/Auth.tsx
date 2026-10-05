@@ -5,6 +5,157 @@ import { Icon } from '../components/ui/Icon';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, errMsg } from '../lib/api';
 
+const authStyles = `
+  .ap-root, .ap-root *, .ap-root *::before, .ap-root *::after { box-sizing: border-box; }
+  .ap-root {
+    min-height: 100dvh;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* ───────── Brand panel (laptop only) ───────── */
+  .ap-aside {
+    display: none;
+    position: relative;
+    overflow: hidden;
+    padding: 56px 64px;
+    background:
+      radial-gradient(90% 70% at 0% 0%, rgba(110,168,255,.22) 0%, transparent 60%),
+      radial-gradient(80% 70% at 100% 100%, rgba(108,99,255,.2) 0%, transparent 60%),
+      var(--bg-elev);
+    border-right: 1px solid var(--line);
+  }
+  .ap-aside-inner {
+    position: relative;
+    height: 100%;
+    max-width: 560px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 40px;
+  }
+  .ap-aside a { text-decoration: none; }
+  .ap-eyebrow {
+    margin: 0 0 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .ap-headline {
+    margin: 0 0 16px;
+    font-size: clamp(2.2rem, 3.4vw, 3.2rem);
+    line-height: 1.08;
+    letter-spacing: -.03em;
+    font-weight: 800;
+  }
+  .ap-lead {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-2);
+  }
+  .ap-points {
+    display: grid;
+    gap: 14px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ap-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+  }
+  .ap-check {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .ap-points b { display: block; font-size: .95rem; margin-bottom: 2px; }
+  .ap-points span { font-size: .85rem; color: var(--text-3); line-height: 1.45; }
+  .ap-foot-note { font-size: .8rem; color: var(--text-3); }
+
+  /* ───────── Form side ───────── */
+  .ap-main {
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    background:
+      radial-gradient(700px 360px at 50% -10%, rgba(110,168,255,.12), transparent),
+      var(--bg);
+  }
+  .ap-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow);
+  }
+  .ap-card h1 { font-size: clamp(1.5rem, 4vw, 1.9rem); }
+  .ap-card form { margin-top: 18px; }
+  .ap-card .input { min-height: 46px; }
+  .ap-card .btn-primary { min-height: 48px; font-size: 1rem; margin-top: 4px; }
+  .ap-logo-mobile { margin-bottom: 14px; align-self: flex-start; }
+  .ap-foot {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    font-size: .9rem;
+  }
+
+  /* ───────── Tablet ───────── */
+  @media (min-width: 640px) {
+    .ap-main { padding: 40px 24px; }
+    .ap-card { padding: 36px 36px; }
+  }
+
+  /* ───────── Laptop / Desktop: split screen ───────── */
+  @media (min-width: 960px) {
+    .ap-root { grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); }
+    .ap-aside { display: block; }
+    .ap-logo-mobile { display: none; }
+    .ap-main { padding: 48px; }
+    .ap-card {
+      max-width: 460px;
+      padding: 40px;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .ap-aside { padding: 72px 96px; }
+    .ap-card { max-width: 480px; }
+  }
+
+  @media (max-width: 380px) {
+    .ap-card { padding: 24px 18px; }
+  }
+`;
+
 function useNext(): string {
   const loc = useLocation();
   const from = (loc.state as { from?: string } | null)?.from;
@@ -14,14 +165,50 @@ function useNext(): string {
 function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle: string; children: React.ReactNode; footer: React.ReactNode }) {
   useEffect(() => { document.title = `${title} · MovieFlex Watch Party`; }, [title]);
   return (
-    <div className="auth-page">
-      <div className="auth-card card">
-        <Link to="/" className="auth-logo" aria-label="MovieFlex home"><Logo /></Link>
-        <h1>{title}</h1>
-        <p className="muted-2">{subtitle}</p>
-        {children}
-        <p className="auth-foot muted-2">{footer}</p>
-      </div>
+    <div className="ap-root">
+      <style>{authStyles}</style>
+
+      {/* Brand panel: visible on laptop / desktop only */}
+      <aside className="ap-aside" aria-hidden="true">
+        <div className="ap-aside-inner">
+          <Link to="/" tabIndex={-1}><Logo /></Link>
+
+          <div>
+            <p className="ap-eyebrow">Watch Party</p>
+            <h2 className="ap-headline">Watch together, in perfect sync.</h2>
+            <p className="ap-lead">
+              Create a private room, share the code, and enjoy videos with friends while you chat live.
+            </p>
+            <ul className="ap-points">
+              <li>
+                <span className="ap-check">✓</span>
+                <div><b>Synced playback</b><span>Everyone sees the same moment, at the same time.</span></div>
+              </li>
+              <li>
+                <span className="ap-check">✓</span>
+                <div><b>Live chat and reactions</b><span>Talk and react without leaving the video.</span></div>
+              </li>
+              <li>
+                <span className="ap-check">✓</span>
+                <div><b>Join with a code</b><span>Start a room in under a minute.</span></div>
+              </li>
+            </ul>
+          </div>
+
+          <p className="ap-foot-note">© MovieFlex Watch Party</p>
+        </div>
+      </aside>
+
+      {/* Form side */}
+      <main className="ap-main">
+        <div className="ap-card card">
+          <Link to="/" className="ap-logo-mobile" aria-label="MovieFlex home"><Logo /></Link>
+          <h1>{title}</h1>
+          <p className="muted-2">{subtitle}</p>
+          {children}
+          <p className="ap-foot muted-2">{footer}</p>
+        </div>
+      </main>
     </div>
   );
 }

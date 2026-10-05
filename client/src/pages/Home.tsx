@@ -14,357 +14,538 @@ import { formatClock, timeAgo } from '../lib/format';
 import { watchUrl } from '../lib/youtube';
 import type { HistoryItem, PublicUser, RoomCardData } from '../lib/types';
 
-const dashboardStyles = `
+/* ──────────────────────────────────────────────────────────────
+   LAYOUT
+   Phone   : top bar → hero → swipe rails → bottom tab bar
+   Tablet  : single column, 2–3 col card grids
+   Laptop  : hero (greeting + stats | create/join)
+             main  = My Rooms, Live Now
+             aside = Continue Watching, Watched With (sticky)
+   ────────────────────────────────────────────────────────────── */
+
+const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 
   :root {
-    --dash-bg: #030712;
-    --dash-card: rgba(15, 23, 42, 0.65);
-    --dash-card-hover: rgba(30, 41, 59, 0.8);
-    --dash-border: rgba(255, 255, 255, 0.08);
-    --dash-border-bright: rgba(129, 140, 248, 0.35);
+    --hp-surface: rgba(15, 23, 42, 0.72);
+    --hp-surface-2: rgba(30, 41, 59, 0.6);
+    --hp-border: rgba(255, 255, 255, 0.08);
+    --hp-border-strong: rgba(129, 140, 248, 0.4);
 
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --hp-text: #f8fafc;
+    --hp-text-2: #a8b3c7;
+    --hp-text-3: #7b88a1;
 
-    --accent-indigo: #6366f1;
-    --accent-teal: #10b981;
-    --accent-rose: #f43f5e;
+    --hp-brand: #6366f1;
+    --hp-brand-2: #a855f7;
+    --hp-live: #f43f5e;
+    --hp-online: #10b981;
+    --hp-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
 
-    --grad-glow: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.12) 50%, rgba(16, 185, 129, 0.08) 100%);
-    --grad-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --hp-font-head: 'Space Grotesk', system-ui, sans-serif;
+    --hp-font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-    --font-heading: 'Space Grotesk', system-ui, sans-serif;
-    --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+    --r-sm: 10px; --r-md: 14px; --r-lg: 22px;
 
-    /* Fluid spacing: scales smoothly from phone to large desktop */
-    --dash-gap-section: clamp(28px, 4vw, 44px);
-    --dash-gap-grid: clamp(14px, 1.8vw, 24px);
+    --hp-top-h: 56px;
+    --hp-tab-h: 64px;
   }
 
-  .dash-root {
-    font-family: var(--font-body);
-    color: var(--text-primary);
-    display: flex;
-    flex-direction: column;
-    gap: var(--dash-gap-section);
-    padding-bottom: clamp(32px, 6vw, 72px);
+  .hp-root, .hp-root *, .hp-root *::before, .hp-root *::after { box-sizing: border-box; }
+  .hp-root {
+    font-family: var(--hp-font-body);
+    color: var(--hp-text);
     width: 100%;
-    max-width: 1600px;
+    max-width: 1680px;
     margin-inline: auto;
     min-width: 0;
-  }
-  .dash-root *,
-  .dash-root *::before,
-  .dash-root *::after {
-    box-sizing: border-box;
-  }
-
-  .dash-section {
     display: flex;
     flex-direction: column;
-    gap: clamp(14px, 2vw, 20px);
-    min-width: 0;
+    gap: var(--s5);
+    padding-bottom: calc(var(--hp-tab-h) + env(safe-area-inset-bottom, 0px) + var(--s5));
   }
-  .dash-section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .dash-section-head h2 {
-    font-family: var(--font-heading);
-    font-size: clamp(18px, 2.2vw, 24px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .dash-link {
-    font-size: 14px;
-    font-weight: 600;
-    color: #818cf8;
-    text-decoration: none;
-    transition: color 0.2s;
-    white-space: nowrap;
-    padding: 6px 0;
-  }
-  .dash-link:hover {
-    color: #a5b4fc;
+  .hp-root a { text-decoration: none; }
+  .hp-root :focus-visible {
+    outline: 2px solid #a5b4fc;
+    outline-offset: 2px;
+    border-radius: 8px;
   }
 
-  /* ---------- Welcome banner ---------- */
-  .dash-welcome-card {
-    position: relative;
-    border-radius: clamp(20px, 3vw, 28px);
-    padding: clamp(20px, 4vw, 44px);
-    background: var(--dash-card);
-    border: 1px solid var(--dash-border);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    overflow: hidden;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: clamp(20px, 3vw, 40px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-  .dash-welcome-card::before {
-    content: "";
-    position: absolute;
-    inset: -50px;
-    background: var(--grad-glow);
-    filter: blur(60px);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .dash-welcome-info {
-    position: relative;
-    z-index: 1;
-    max-width: 560px;
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-  .dash-welcome-info h1 {
-    font-family: var(--font-heading);
-    font-size: clamp(24px, 4vw, 44px);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    margin: 0 0 10px;
-    line-height: 1.12;
-    overflow-wrap: anywhere;
-  }
-  .dash-welcome-info p {
-    font-size: clamp(13px, 1.4vw, 15px);
-    line-height: 1.55;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-  .dash-welcome-actions {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-end;
-    flex: 0 0 auto;
-    min-width: 0;
-  }
-  .dash-join-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 10px;
-    font-size: 13px;
-    min-width: 0;
-  }
-  .dash-join-row > span {
-    color: var(--text-muted);
-  }
-
-  .dash-btn-primary {
+  /* ───────── Buttons ───────── */
+  .hp-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 50px;
-    min-height: 44px; /* comfortable touch target */
-    padding: 0 26px;
-    border-radius: 14px;
-    background: var(--grad-primary);
+    gap: var(--s2);
+    min-height: 48px;
+    padding: 0 var(--s5);
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--hp-grad);
     color: #fff;
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 15px;
-    border: none;
+    font: 700 15px/1 var(--hp-font-head);
+    letter-spacing: -0.01em;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    transition: transform .18s ease, box-shadow .18s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .dash-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);
-  }
-  .dash-btn-primary:active {
-    transform: translateY(0);
-  }
+  .hp-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(99, 102, 241, 0.5); }
+  .hp-btn:active { transform: translateY(0) scale(.98); }
 
-  /* ---------- Card grid ----------
-     Large desktop: 4 cols | Laptop/desktop: 3 cols | Tablet: 2 cols | Phone: 1 col */
-  .dash-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--dash-gap-grid);
-  }
-
-  /* ---------- People ---------- */
-  .dash-people-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-    gap: 14px;
-  }
-  .dash-person-chip {
+  /* ───────── Mobile top bar ───────── */
+  .hp-top {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    height: var(--hp-top-h);
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: var(--dash-card);
-    border: 1px solid var(--dash-border);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.2s;
-    min-width: 0;
-  }
-  .dash-person-chip:hover {
-    background: var(--dash-card-hover);
-    border-color: var(--dash-border-bright);
-    transform: translateY(-2px);
-  }
-
-  /* ---------- History cards ---------- */
-  .dash-history-card {
-    border-radius: 20px;
-    background: var(--dash-card);
-    border: 1px solid var(--dash-border);
-    overflow: hidden;
+    justify-content: space-between;
+    gap: var(--s3);
+    padding: 0 var(--s1);
+    background: rgba(3, 7, 18, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    transition: all 0.25s;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+    border-bottom: 1px solid var(--hp-border);
   }
-  .dash-history-card:hover {
-    border-color: var(--dash-border-bright);
-    transform: translateY(-3px);
-    box-shadow: 0 16px 36px rgba(0,0,0,0.4);
-  }
-  .dash-history-body {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-  }
-  .dash-history-foot {
-    padding: 12px 16px;
-    border-top: 1px solid var(--dash-border);
-    display: flex;
-    justify-content: space-between;
+  .hp-brand {
+    display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.2);
+    font: 700 18px/1 var(--hp-font-head);
+    letter-spacing: -0.02em;
+    color: var(--hp-text);
+  }
+  .hp-brand-mark {
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 9px;
+    background: var(--hp-grad);
+    font-size: 12px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, .45);
+  }
+  .hp-top-actions { display: flex; align-items: center; gap: var(--s2); }
+  .hp-icon-btn {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border-radius: var(--r-md);
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--hp-border);
+    color: var(--hp-text);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hp-me {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--hp-grad);
+    border: 2px solid rgba(255,255,255,.16);
+    font: 700 15px/1 var(--hp-font-head);
+    color: #fff;
   }
 
-  /* ---------- Extra-large screens (wide desktop monitors) ---------- */
-  @media (min-width: 1500px) {
-    .dash-grid-3 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+  /* ───────── Hero ───────── */
+  .hp-hero {
+    position: relative;
+    display: grid;
+    gap: var(--s5);
+    padding: var(--s5);
+    border-radius: var(--r-lg);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(99,102,241,.22) 0%, transparent 55%),
+      radial-gradient(90% 120% at 100% 100%, rgba(168,85,247,.18) 0%, transparent 55%),
+      var(--hp-surface);
+    border: 1px solid var(--hp-border);
+    overflow: hidden;
+  }
+  .hp-hero-copy { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .hp-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #a5b4fc;
+    margin: 0 0 var(--s2);
+  }
+  .hp-hero h1 {
+    margin: 0 0 var(--s2);
+    font: 700 clamp(26px, 5.5vw, 44px)/1.1 var(--hp-font-head);
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .hp-hero-copy > p {
+    margin: 0;
+    max-width: 54ch;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--hp-text-2);
   }
 
-  /* ---------- Laptop / small desktop ---------- */
-  @media (max-width: 1199px) {
-    .dash-welcome-info { max-width: 460px; }
+  /* stats strip */
+  .hp-stats {
+    display: none;
+    gap: var(--s3);
+    margin-top: var(--s5);
+    flex-wrap: wrap;
+  }
+  .hp-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 108px;
+    padding: var(--s3) var(--s4);
+    border-radius: var(--r-md);
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--hp-border);
+  }
+  .hp-stat b { font: 700 24px/1.1 var(--hp-font-head); letter-spacing: -0.02em; }
+  .hp-stat span { font-size: 12px; font-weight: 600; color: var(--hp-text-3); }
+
+  /* create / join panel */
+  .hp-hero-actions {
+    display: grid;
+    gap: var(--s3);
+    align-content: center;
+    min-width: 0;
+  }
+  .hp-join {
+    display: grid;
+    gap: var(--s2);
+    padding: var(--s3) var(--s4);
+    border-radius: var(--r-md);
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--hp-border);
+  }
+  .hp-join > span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hp-text-3);
   }
 
-  /* ---------- Tablet (portrait & landscape) ---------- */
-  @media (max-width: 1023px) {
-    .dash-grid-3 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* ───────── Layout ───────── */
+  .hp-layout { display: grid; gap: var(--s6); min-width: 0; }
+  .hp-main { display: flex; flex-direction: column; gap: var(--s6); min-width: 0; }
+  .hp-aside { display: flex; flex-direction: column; gap: var(--s6); min-width: 0; }
+
+  /* ───────── Section ───────── */
+  .hp-section { display: flex; flex-direction: column; gap: var(--s4); min-width: 0; }
+  .hp-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+  .hp-head h2 {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0;
+    font: 700 20px/1.2 var(--hp-font-head);
+    letter-spacing: -0.02em;
+  }
+  .hp-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(244, 63, 94, .14);
+    border: 1px solid rgba(244, 63, 94, .35);
+    color: #fda4af;
+    font: 700 11px/1.4 var(--hp-font-body);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .hp-badge i {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--hp-live);
+    animation: hpPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes hpPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,.6); }
+    50% { box-shadow: 0 0 0 6px rgba(244,63,94,0); }
+  }
+  .hp-seeall {
+    display: inline-flex; align-items: center; gap: 4px;
+    min-height: 44px;
+    padding: 0 var(--s1);
+    font-size: 14px; font-weight: 600;
+    color: #a5b4fc;
+    white-space: nowrap;
+  }
+  .hp-seeall:hover { color: #c7d2fe; }
+
+  /* ───────── Card rail: swipe on phone, auto-fit grid on larger ───────── */
+  .hp-rail {
+    display: flex;
+    gap: var(--s3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--s1);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-bottom: var(--s2);
+    scrollbar-width: none;
+  }
+  .hp-rail::-webkit-scrollbar { display: none; }
+  .hp-rail > * { flex: 0 0 82%; max-width: 360px; scroll-snap-align: start; min-width: 0; }
+  .hp-skel { min-width: 0; }
+
+  /* ───────── History rows ───────── */
+  .hp-hist-list { display: grid; gap: var(--s3); }
+  .hp-hist {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: var(--s3) var(--s4);
+    align-items: center;
+    padding: var(--s3);
+    border-radius: var(--r-md);
+    background: var(--hp-surface);
+    border: 1px solid var(--hp-border);
+    transition: border-color .2s, background .2s;
+    min-width: 0;
+  }
+  .hp-hist:hover { border-color: var(--hp-border-strong); background: var(--hp-surface-2); }
+  .hp-hist-thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: #0b1020;
+  }
+  .hp-hist-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .hp-hist-body h3 { margin: 0; font: 700 14px/1.3 var(--hp-font-body); }
+  .hp-hist-body p { margin: 0; font-size: 12px; color: var(--hp-text-3); }
+  .hp-hist .btn { grid-column: 1 / -1; min-height: 44px; width: 100%; }
+
+  /* ───────── People ───────── */
+  .hp-people {
+    display: flex;
+    gap: var(--s3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: var(--s2);
+  }
+  .hp-people::-webkit-scrollbar { display: none; }
+  .hp-person {
+    flex: 0 0 min(240px, 70%);
+    scroll-snap-align: start;
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s4);
+    border-radius: var(--r-md);
+    background: var(--hp-surface);
+    border: 1px solid var(--hp-border);
+    min-width: 0;
+    transition: border-color .2s, background .2s;
+  }
+  .hp-person:hover { border-color: var(--hp-border-strong); background: var(--hp-surface-2); }
+  .hp-person strong {
+    display: block; font-size: 14px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .hp-person span { font-size: 12px; color: var(--hp-text-3); }
+  .hp-people-skel { display: grid; gap: var(--s3); }
+
+  /* ───────── Bottom tab bar (phone) ───────── */
+  .hp-tabs {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 70;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    height: calc(var(--hp-tab-h) + env(safe-area-inset-bottom, 0px));
+    padding: 6px var(--s2) env(safe-area-inset-bottom, 0px);
+    background: rgba(8, 12, 26, 0.94);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-top: 1px solid var(--hp-border);
+    box-shadow: 0 -10px 30px rgba(0,0,0,.4);
+  }
+  .hp-tab {
+    height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    color: var(--hp-text-3);
+    font: 600 11px/1 var(--hp-font-body);
+    -webkit-tap-highlight-color: transparent;
+    min-width: 0;
+  }
+  .hp-tab-ico {
+    width: 48px; height: 28px;
+    display: grid; place-items: center;
+    border-radius: 999px;
+    transition: background .2s;
+  }
+  .hp-tab.is-active { color: #c7d2fe; }
+  .hp-tab.is-active .hp-tab-ico { background: rgba(99,102,241,.2); }
+  .hp-tab:active .hp-tab-ico { background: rgba(255,255,255,.08); }
+  .hp-fab-wrap { display: flex; justify-content: center; align-items: center; height: 100%; }
+  .hp-fab {
+    width: 56px; height: 56px;
+    margin-top: -28px;
+    display: grid; place-items: center;
+    border-radius: 18px;
+    border: 4px solid #030712;
+    background: var(--hp-grad);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(99,102,241,.55);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s;
+  }
+  .hp-fab:active { transform: scale(.92); }
+
+  /* =====================================================
+     ≥ 640px : card grids
+     ===================================================== */
+  @media (min-width: 640px) {
+    .hp-rail {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: var(--s4);
+      overflow: visible;
+      scroll-snap-type: none;
+      padding-bottom: 0;
     }
+    .hp-rail > * { max-width: none; }
+
+    .hp-people {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      overflow: visible;
+      padding-bottom: 0;
+    }
+    .hp-person { flex: initial; }
+
+    .hp-hist { grid-template-columns: 144px minmax(0, 1fr) auto; }
+    .hp-hist .btn { grid-column: auto; width: auto; }
+
+    .hp-hero { padding: var(--s6); }
   }
 
-  @media (max-width: 899px) {
-    .dash-welcome-card {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .dash-welcome-info { max-width: 100%; }
-    .dash-welcome-actions {
-      align-items: flex-start;
-      width: 100%;
-    }
-    .dash-join-row {
-      justify-content: flex-start;
-    }
-  }
-
-  /* ---------- Phone ---------- */
-  @media (max-width: 639px) {
-    .dash-grid-3 {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .dash-welcome-actions .dash-btn-primary {
-      width: 100%;
-    }
-    .dash-join-row {
-      width: 100%;
-    }
-    .dash-history-card { border-radius: 16px; }
-    .dash-history-body { padding: 14px; }
-    .dash-history-foot { padding: 10px 14px; }
-    .dash-person-chip { padding: 10px 14px; }
-    .dash-people-list { grid-template-columns: minmax(0, 1fr); }
-  }
-
-  /* ---------- Small phones ---------- */
-  @media (max-width: 380px) {
-    .dash-btn-primary {
-      padding: 0 18px;
-      font-size: 14px;
-    }
-    .dash-history-foot {
-      flex-direction: column;
+  /* =====================================================
+     ≥ 768px : mobile chrome off, 2-col hero, stats on
+     ===================================================== */
+  @media (min-width: 768px) {
+    .hp-top, .hp-tabs { display: none; }
+    .hp-root { padding-bottom: var(--s7); gap: var(--s6); }
+    .hp-hero {
+      grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
       align-items: stretch;
+      gap: var(--s6);
     }
+    .hp-stats { display: flex; }
+    .hp-hero-actions {
+      padding: var(--s5);
+      border-radius: var(--r-lg);
+      background: rgba(3, 7, 18, .45);
+      border: 1px solid var(--hp-border);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .hp-head h2 { font-size: 22px; }
+    .hp-aside .hp-hist-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hp-aside .hp-hist { grid-template-columns: 112px minmax(0, 1fr); }
+    .hp-aside .hp-hist .btn { grid-column: 1 / -1; width: 100%; }
   }
 
-  /* ---------- Touch devices: no sticky hover lift ---------- */
+  /* =====================================================
+     ≥ 1100px : laptop — main feed + sticky sidebar
+     ===================================================== */
+  @media (min-width: 1100px) {
+    .hp-hero { padding: 40px; }
+    .hp-layout {
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: var(--s6);
+      align-items: start;
+    }
+    .hp-aside {
+      position: sticky;
+      top: var(--s5);
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .hp-aside::-webkit-scrollbar { display: none; }
+    .hp-aside .hp-hist-list { grid-template-columns: minmax(0, 1fr); }
+    .hp-aside .hp-hist { grid-template-columns: 104px minmax(0, 1fr); }
+    .hp-people { display: flex; flex-direction: column; overflow: visible; }
+    .hp-person { flex: initial; }
+  }
+
+  /* Large monitors */
+  @media (min-width: 1700px) {
+    .hp-layout { grid-template-columns: minmax(0, 1fr) 380px; }
+    .hp-rail { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+  }
+
+  /* Tight phones */
+  @media (max-width: 380px) {
+    .hp-hero { padding: var(--s4); }
+    .hp-tab { font-size: 10px; }
+    .hp-tab-ico { width: 40px; }
+    .hp-hist { grid-template-columns: 96px minmax(0, 1fr); }
+  }
+
+  /* Touch: no sticky hover */
   @media (hover: none) {
-    .dash-btn-primary:hover,
-    .dash-person-chip:hover,
-    .dash-history-card:hover {
-      transform: none;
-    }
+    .hp-btn:hover { transform: none; box-shadow: 0 6px 20px rgba(99,102,241,.35); }
+    .hp-hist:hover, .hp-person:hover { background: var(--hp-surface); border-color: var(--hp-border); }
   }
-
   @media (prefers-reduced-motion: reduce) {
-    .dash-btn-primary,
-    .dash-person-chip,
-    .dash-history-card {
-      transition: none;
-    }
+    .hp-badge i { animation: none; }
+    .hp-btn, .hp-fab, .hp-hist, .hp-person, .hp-tab-ico { transition: none; }
   }
 `;
 
-function Section({ title, to, children, action }: { title: string; to?: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Section({
+  title,
+  to,
+  badge,
+  children,
+}: {
+  title: string;
+  to?: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="dash-section">
-      <div className="dash-section-head">
-        <h2>{title}</h2>
-        {action ?? (to && <Link to={to} className="dash-link">See all</Link>)}
+    <section className="hp-section">
+      <div className="hp-head">
+        <h2>
+          {title}
+          {badge}
+        </h2>
+        {to && (
+          <Link to={to} className="hp-seeall">
+            See all <span aria-hidden="true">›</span>
+          </Link>
+        )}
       </div>
       {children}
     </section>
   );
 }
 
+function HomeGlyph({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" />
+    </svg>
+  );
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return 'Late night watch?';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function Home() {
   const { user } = useAuth();
   const openCreate = useCreateRoom();
 
-  useEffect(() => { 
-    document.title = 'Home · MovieFlex Watch Party'; 
+  useEffect(() => {
+    document.title = 'Home · MovieFlex Watch Party';
   }, []);
 
   const live = useFetch<{ items: RoomCardData[] }>('/rooms/discover?filter=live&limit=6');
@@ -372,148 +553,216 @@ export default function Home() {
   const hist = useFetch<{ items: HistoryItem[] }>('/history?limit=6');
   const friends = useFetch<{ friends: (PublicUser & { sharedRooms: number })[] }>('/users/friends');
 
-  return (
-    <div className="dash-root">
-      <style>{dashboardStyles}</style>
+  const liveCount = !live.loading && !live.error ? live.data?.items.length ?? 0 : 0;
 
-      {/* Glassmorphic Welcome Banner */}
-      <section className="dash-welcome-card">
-        <div className="dash-welcome-info">
+  // display-only values for the hero stats strip
+  const stat = (loading: boolean, error: unknown, n?: number) =>
+    loading || error ? '–' : String(n ?? 0);
+
+  return (
+    <div className="hp-root">
+      <style>{styles}</style>
+
+      {/* ───────── Mobile top bar ───────── */}
+      <header className="hp-top">
+        <Link to="/" className="hp-brand" aria-label="MovieFlex Home">
+          <span className="hp-brand-mark" aria-hidden="true">▶</span>
+          MovieFlex
+        </Link>
+        <div className="hp-top-actions">
+          <Link to="/discover" className="hp-icon-btn" aria-label="Discover rooms">
+            <Icon name="compass" size={18} />
+          </Link>
+          <span className="hp-me" aria-label="Your profile">
+            {user?.displayName?.[0]?.toUpperCase() ?? '?'}
+          </span>
+        </div>
+      </header>
+
+      {/* ───────── Hero ───────── */}
+      <section className="hp-hero" aria-label="Start watching">
+        <div className="hp-hero-copy">
+          <p className="hp-eyebrow">{greeting()}</p>
           <h1>Welcome back, {user?.displayName.split(' ')[0]} 👋</h1>
-          <p>Ready for movie night? Launch your private watch room or jump into a live stream with friends.</p>
+          <p>Start a private watch room in seconds, or hop into a live stream with friends.</p>
+
+          <div className="hp-stats" aria-label="Your activity">
+            <div className="hp-stat">
+              <b>{stat(mine.loading, mine.error, mine.data?.rooms.length)}</b>
+              <span>My rooms</span>
+            </div>
+            <div className="hp-stat">
+              <b>{stat(live.loading, live.error, live.data?.items.length)}</b>
+              <span>Live now</span>
+            </div>
+            <div className="hp-stat">
+              <b>{stat(friends.loading, friends.error, friends.data?.friends.length)}</b>
+              <span>Watch buddies</span>
+            </div>
+          </div>
         </div>
 
-        <div className="dash-welcome-actions">
-          <button className="dash-btn-primary" onClick={() => openCreate()}>
+        <div className="hp-hero-actions">
+          <button className="hp-btn" onClick={() => openCreate()}>
             <Icon name="plus" size={18} /> Create Watch Party
           </button>
-          
-          <div className="dash-join-row">
-            <span>or join with room code:</span>
+          <div className="hp-join">
+            <span>Have a room code?</span>
             <JoinByCode />
           </div>
         </div>
       </section>
 
-      {/* Live Now Section */}
-      <Section title="Live Rooms Now" to="/discover?filter=live">
-        {live.loading ? (
-          <CardGridSkeleton count={3} />
-        ) : live.error ? (
-          <ErrorState message={live.error} onRetry={live.reload} />
-        ) : live.data!.items.length ? (
-          <div className="dash-grid-3">
-            {live.data!.items.map((r) => (
-              <RoomCard key={r.id} room={r} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState 
-            icon="compass" 
-            title="No public rooms live right now" 
-            text="Be the first — create a public room and others can discover it." 
-            action={<Link to="/discover" className="btn btn-secondary">Browse Discover</Link>} 
-          />
-        )}
-      </Section>
-
-      {/* My Rooms Section */}
-      <Section title="My Saved Rooms" to="/rooms">
-        {mine.loading ? (
-          <CardGridSkeleton count={3} />
-        ) : mine.error ? (
-          <ErrorState message={mine.error} onRetry={mine.reload} />
-        ) : mine.data!.rooms.length ? (
-          <div className="dash-grid-3">
-            {mine.data!.rooms.slice(0, 3).map((r) => (
-              <RoomCard key={r.id} room={r} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState 
-            icon="users" 
-            title="You haven't joined any rooms yet" 
-            text="Create one or enter a room code from a friend to start watching." 
-            action={<button className="dash-btn-primary" onClick={() => openCreate()}>Create a Room</button>} 
-          />
-        )}
-      </Section>
-
-      {/* Recently Watched History Section */}
-      <Section title="Recently Watched" to="/history">
-        {hist.loading ? (
-          <CardGridSkeleton count={3} />
-        ) : hist.error ? (
-          <ErrorState message={hist.error} onRetry={hist.reload} />
-        ) : hist.data!.items.length ? (
-          <div className="dash-grid-3">
-            {hist.data!.items.slice(0, 3).map((h) => (
-              <article className="dash-history-card" key={h.id}>
-                <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
-                  <Thumb src={h.thumbnail} />
-                </div>
-                <div className="dash-history-body">
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.3 }} className="line-2">
-                    {h.title}
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-                    {timeAgo(h.lastWatchedAt)}{h.lastPosition > 5 ? ` · Stopped at ${formatClock(h.lastPosition)}` : ''}
-                  </p>
-                </div>
-                <div className="dash-history-foot">
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>YouTube Stream</span>
-                  <button 
-                    className="btn btn-secondary btn-sm" 
-                    onClick={() => openCreate({ name: h.title, videoUrl: watchUrl(h.videoId) })}
-                  >
-                    Watch Again
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState 
-            icon="history" 
-            title="Nothing watched yet" 
-            text="Videos you stream in watch parties will automatically appear here." 
-          />
-        )}
-      </Section>
-
-      {/* Watched With / Friend Network */}
-      <Section title="Watched With">
-        {friends.loading ? (
-          <div className="dash-people-list">
-            <div className="skeleton" style={{ height: 60, borderRadius: 16 }} />
-            <div className="skeleton" style={{ height: 60, borderRadius: 16 }} />
-          </div>
-        ) : friends.error ? (
-          <ErrorState message={friends.error} onRetry={friends.reload} />
-        ) : friends.data!.friends.length ? (
-          <div className="dash-people-list">
-            {friends.data!.friends.slice(0, 8).map((f) => (
-              <div className="dash-person-chip" key={f.id}>
-                <Avatar name={f.displayName} color={f.avatarColor} size={42} online={!!f.online} />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ display: 'block', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {f.displayName}
-                  </strong>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {f.online ? 'Online now' : `@${f.username}`} · {f.sharedRooms} {f.sharedRooms === 1 ? 'room' : 'rooms'}
-                  </span>
-                </div>
+      <div className="hp-layout">
+        {/* ───────── Main feed ───────── */}
+        <div className="hp-main">
+          <Section title="My Rooms" to="/rooms">
+            {mine.loading ? (
+              <div className="hp-skel"><CardGridSkeleton count={3} /></div>
+            ) : mine.error ? (
+              <ErrorState message={mine.error} onRetry={mine.reload} />
+            ) : mine.data!.rooms.length ? (
+              <div className="hp-rail">
+                {mine.data!.rooms.slice(0, 3).map((r) => (
+                  <RoomCard key={r.id} room={r} />
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState 
-            icon="userPlus" 
-            title="No watch buddies yet" 
-            text="People you share a watch party room with will show up in this roster." 
-          />
-        )}
-      </Section>
+            ) : (
+              <EmptyState
+                icon="users"
+                title="You haven't joined any rooms yet"
+                text="Create one or enter a room code from a friend to start watching."
+                action={<button className="hp-btn" onClick={() => openCreate()}>Create a Room</button>}
+              />
+            )}
+          </Section>
+
+          <Section
+            title="Live Now"
+            to="/discover?filter=live"
+            badge={
+              liveCount > 0 ? (
+                <span className="hp-badge"><i /> {liveCount} live</span>
+              ) : undefined
+            }
+          >
+            {live.loading ? (
+              <div className="hp-skel"><CardGridSkeleton count={3} /></div>
+            ) : live.error ? (
+              <ErrorState message={live.error} onRetry={live.reload} />
+            ) : live.data!.items.length ? (
+              <div className="hp-rail">
+                {live.data!.items.map((r) => (
+                  <RoomCard key={r.id} room={r} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="compass"
+                title="No public rooms live right now"
+                text="Be the first — create a public room and others can discover it."
+                action={<Link to="/discover" className="btn btn-secondary">Browse Discover</Link>}
+              />
+            )}
+          </Section>
+        </div>
+
+        {/* ───────── Sidebar: resume + social ───────── */}
+        <aside className="hp-aside">
+          <Section title="Continue Watching" to="/history">
+            {hist.loading ? (
+              <div className="hp-skel"><CardGridSkeleton count={3} /></div>
+            ) : hist.error ? (
+              <ErrorState message={hist.error} onRetry={hist.reload} />
+            ) : hist.data!.items.length ? (
+              <div className="hp-hist-list">
+                {hist.data!.items.slice(0, 3).map((h) => (
+                  <article className="hp-hist" key={h.id}>
+                    <div className="hp-hist-thumb">
+                      <Thumb src={h.thumbnail} />
+                    </div>
+                    <div className="hp-hist-body">
+                      <h3 className="line-2">{h.title}</h3>
+                      <p>
+                        {timeAgo(h.lastWatchedAt)}
+                        {h.lastPosition > 5 ? ` · Stopped at ${formatClock(h.lastPosition)}` : ''}
+                      </p>
+                    </div>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => openCreate({ name: h.title, videoUrl: watchUrl(h.videoId) })}
+                    >
+                      Watch Again
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="history"
+                title="Nothing watched yet"
+                text="Videos you stream in watch parties will automatically appear here."
+              />
+            )}
+          </Section>
+
+          <Section title="Watched With">
+            {friends.loading ? (
+              <div className="hp-people-skel">
+                <div className="skeleton" style={{ height: 64, borderRadius: 14 }} />
+                <div className="skeleton" style={{ height: 64, borderRadius: 14 }} />
+              </div>
+            ) : friends.error ? (
+              <ErrorState message={friends.error} onRetry={friends.reload} />
+            ) : friends.data!.friends.length ? (
+              <div className="hp-people">
+                {friends.data!.friends.slice(0, 8).map((f) => (
+                  <div className="hp-person" key={f.id}>
+                    <Avatar name={f.displayName} color={f.avatarColor} size={42} online={!!f.online} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <strong>{f.displayName}</strong>
+                      <span>
+                        {f.online ? 'Online now' : `@${f.username}`} · {f.sharedRooms} {f.sharedRooms === 1 ? 'room' : 'rooms'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="userPlus"
+                title="No watch buddies yet"
+                text="People you share a watch party room with will show up in this roster."
+              />
+            )}
+          </Section>
+        </aside>
+      </div>
+
+      {/* ───────── Mobile bottom tab bar ───────── */}
+      <nav className="hp-tabs" aria-label="Primary">
+        <Link to="/" className="hp-tab is-active" aria-current="page">
+          <span className="hp-tab-ico"><HomeGlyph /></span>
+          Home
+        </Link>
+        <Link to="/discover" className="hp-tab">
+          <span className="hp-tab-ico"><Icon name="compass" size={20} /></span>
+          Discover
+        </Link>
+        <div className="hp-fab-wrap">
+          <button type="button" className="hp-fab" onClick={() => openCreate()} aria-label="Create watch party">
+            <Icon name="plus" size={24} />
+          </button>
+        </div>
+        <Link to="/rooms" className="hp-tab">
+          <span className="hp-tab-ico"><Icon name="users" size={20} /></span>
+          Rooms
+        </Link>
+        <Link to="/history" className="hp-tab">
+          <span className="hp-tab-ico"><Icon name="history" size={20} /></span>
+          History
+        </Link>
+      </nav>
     </div>
   );
 }
