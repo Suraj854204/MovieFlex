@@ -14,46 +14,33 @@ import { formatClock, timeAgo } from '../lib/format';
 import { watchUrl } from '../lib/youtube';
 import type { HistoryItem, PublicUser, RoomCardData } from '../lib/types';
 
-/* ──────────────────────────────────────────────────────────────
-   LAYOUT
-   Phone   : top bar → hero → swipe rails → bottom tab bar
-   Tablet  : single column, 2–3 col card grids
-   Laptop  : hero (greeting + stats | create/join)
-             main  = My Rooms, Live Now
-             aside = Continue Watching, Watched With (sticky)
-   ────────────────────────────────────────────────────────────── */
+/* Layout
+   Phone  : hero -> swipe rails (app shell gives top bar + bottom nav)
+   Tablet : hero -> 2 col cards
+   Laptop : hero (copy + stats | create/join)
+            main  = My Rooms, Live Now (3 cards per row)
+            aside = Continue Watching, Watched With (sticky, >=1280px)
+*/
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 
-  :root {
+  .hp-root {
     --hp-surface: rgba(15, 23, 42, 0.72);
     --hp-surface-2: rgba(30, 41, 59, 0.6);
     --hp-border: rgba(255, 255, 255, 0.08);
     --hp-border-strong: rgba(129, 140, 248, 0.4);
-
     --hp-text: #f8fafc;
     --hp-text-2: #a8b3c7;
     --hp-text-3: #7b88a1;
-
-    --hp-brand: #6366f1;
-    --hp-brand-2: #a855f7;
     --hp-live: #f43f5e;
-    --hp-online: #10b981;
     --hp-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-
     --hp-font-head: 'Space Grotesk', system-ui, sans-serif;
     --hp-font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
 
     --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
-    --r-sm: 10px; --r-md: 14px; --r-lg: 22px;
+    --hr-sm: 10px; --hr-md: 14px; --hr-lg: 22px;
 
-    --hp-top-h: 56px;
-    --hp-tab-h: 64px;
-  }
-
-  .hp-root, .hp-root *, .hp-root *::before, .hp-root *::after { box-sizing: border-box; }
-  .hp-root {
     font-family: var(--hp-font-body);
     color: var(--hp-text);
     width: 100%;
@@ -63,14 +50,10 @@ const styles = `
     display: flex;
     flex-direction: column;
     gap: var(--s5);
-    padding-bottom: calc(var(--hp-tab-h) + env(safe-area-inset-bottom, 0px) + var(--s5));
+    padding-bottom: var(--s5);
   }
+  .hp-root, .hp-root *, .hp-root *::before, .hp-root *::after { box-sizing: border-box; }
   .hp-root a { text-decoration: none; }
-  .hp-root :focus-visible {
-    outline: 2px solid #a5b4fc;
-    outline-offset: 2px;
-    border-radius: 8px;
-  }
 
   /* ───────── Buttons ───────── */
   .hp-btn {
@@ -81,7 +64,7 @@ const styles = `
     min-height: 48px;
     padding: 0 var(--s5);
     border: 0;
-    border-radius: var(--r-md);
+    border-radius: var(--hr-md);
     background: var(--hp-grad);
     color: #fff;
     font: 700 15px/1 var(--hp-font-head);
@@ -94,65 +77,13 @@ const styles = `
   .hp-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(99, 102, 241, 0.5); }
   .hp-btn:active { transform: translateY(0) scale(.98); }
 
-  /* ───────── Mobile top bar ───────── */
-  .hp-top {
-    position: sticky;
-    top: 0;
-    z-index: 60;
-    height: var(--hp-top-h);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s3);
-    padding: 0 var(--s1);
-    background: rgba(3, 7, 18, 0.82);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--hp-border);
-  }
-  .hp-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font: 700 18px/1 var(--hp-font-head);
-    letter-spacing: -0.02em;
-    color: var(--hp-text);
-  }
-  .hp-brand-mark {
-    width: 30px; height: 30px;
-    display: grid; place-items: center;
-    border-radius: 9px;
-    background: var(--hp-grad);
-    font-size: 12px;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, .45);
-  }
-  .hp-top-actions { display: flex; align-items: center; gap: var(--s2); }
-  .hp-icon-btn {
-    width: 44px; height: 44px;
-    display: grid; place-items: center;
-    border-radius: var(--r-md);
-    background: rgba(255,255,255,.05);
-    border: 1px solid var(--hp-border);
-    color: var(--hp-text);
-    -webkit-tap-highlight-color: transparent;
-  }
-  .hp-me {
-    width: 40px; height: 40px;
-    display: grid; place-items: center;
-    border-radius: 50%;
-    background: var(--hp-grad);
-    border: 2px solid rgba(255,255,255,.16);
-    font: 700 15px/1 var(--hp-font-head);
-    color: #fff;
-  }
-
   /* ───────── Hero ───────── */
   .hp-hero {
     position: relative;
     display: grid;
     gap: var(--s5);
     padding: var(--s5);
-    border-radius: var(--r-lg);
+    border-radius: var(--hr-lg);
     background:
       radial-gradient(120% 140% at 0% 0%, rgba(99,102,241,.22) 0%, transparent 55%),
       radial-gradient(90% 120% at 100% 100%, rgba(168,85,247,.18) 0%, transparent 55%),
@@ -162,16 +93,16 @@ const styles = `
   }
   .hp-hero-copy { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
   .hp-eyebrow {
+    margin: 0 0 var(--s2);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
     color: #a5b4fc;
-    margin: 0 0 var(--s2);
   }
   .hp-hero h1 {
     margin: 0 0 var(--s2);
-    font: 700 clamp(26px, 5.5vw, 44px)/1.1 var(--hp-font-head);
+    font: 700 clamp(26px, 5.5vw, 42px)/1.1 var(--hp-font-head);
     letter-spacing: -0.03em;
     overflow-wrap: anywhere;
   }
@@ -183,46 +114,30 @@ const styles = `
     color: var(--hp-text-2);
   }
 
-  /* stats strip */
-  .hp-stats {
-    display: none;
-    gap: var(--s3);
-    margin-top: var(--s5);
-    flex-wrap: wrap;
-  }
+  .hp-stats { display: none; gap: var(--s3); margin-top: var(--s5); flex-wrap: wrap; }
   .hp-stat {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 108px;
     padding: var(--s3) var(--s4);
-    border-radius: var(--r-md);
+    border-radius: var(--hr-md);
     background: rgba(255,255,255,.04);
     border: 1px solid var(--hp-border);
   }
   .hp-stat b { font: 700 24px/1.1 var(--hp-font-head); letter-spacing: -0.02em; }
   .hp-stat span { font-size: 12px; font-weight: 600; color: var(--hp-text-3); }
 
-  /* create / join panel */
-  .hp-hero-actions {
-    display: grid;
-    gap: var(--s3);
-    align-content: center;
-    min-width: 0;
-  }
+  .hp-hero-actions { display: grid; gap: var(--s3); align-content: center; min-width: 0; }
   .hp-join {
     display: grid;
     gap: var(--s2);
     padding: var(--s3) var(--s4);
-    border-radius: var(--r-md);
+    border-radius: var(--hr-md);
     background: rgba(255,255,255,.04);
     border: 1px solid var(--hp-border);
   }
-  .hp-join > span {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--hp-text-3);
-  }
+  .hp-join > span { font-size: 12px; font-weight: 600; color: var(--hp-text-3); }
 
   /* ───────── Layout ───────── */
   .hp-layout { display: grid; gap: var(--s6); min-width: 0; }
@@ -261,7 +176,7 @@ const styles = `
   }
   .hp-seeall {
     display: inline-flex; align-items: center; gap: 4px;
-    min-height: 44px;
+    min-height: 40px;
     padding: 0 var(--s1);
     font-size: 14px; font-weight: 600;
     color: #a5b4fc;
@@ -269,13 +184,12 @@ const styles = `
   }
   .hp-seeall:hover { color: #c7d2fe; }
 
-  /* ───────── Card rail: swipe on phone, auto-fit grid on larger ───────── */
+  /* ───────── Card rail: swipe on phone, grid on larger ───────── */
   .hp-rail {
     display: flex;
     gap: var(--s3);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--s1);
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     padding-bottom: var(--s2);
@@ -293,7 +207,7 @@ const styles = `
     gap: var(--s3) var(--s4);
     align-items: center;
     padding: var(--s3);
-    border-radius: var(--r-md);
+    border-radius: var(--hr-md);
     background: var(--hp-surface);
     border: 1px solid var(--hp-border);
     transition: border-color .2s, background .2s;
@@ -303,14 +217,14 @@ const styles = `
   .hp-hist-thumb {
     position: relative;
     aspect-ratio: 16 / 9;
-    border-radius: var(--r-sm);
+    border-radius: var(--hr-sm);
     overflow: hidden;
     background: #0b1020;
   }
   .hp-hist-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
   .hp-hist-body h3 { margin: 0; font: 700 14px/1.3 var(--hp-font-body); }
   .hp-hist-body p { margin: 0; font-size: 12px; color: var(--hp-text-3); }
-  .hp-hist .btn { grid-column: 1 / -1; min-height: 44px; width: 100%; }
+  .hp-hist .btn { grid-column: 1 / -1; width: 100%; }
 
   /* ───────── People ───────── */
   .hp-people {
@@ -327,7 +241,7 @@ const styles = `
     scroll-snap-align: start;
     display: flex; align-items: center; gap: var(--s3);
     padding: var(--s3) var(--s4);
-    border-radius: var(--r-md);
+    border-radius: var(--hr-md);
     background: var(--hp-surface);
     border: 1px solid var(--hp-border);
     min-width: 0;
@@ -341,70 +255,17 @@ const styles = `
   .hp-person span { font-size: 12px; color: var(--hp-text-3); }
   .hp-people-skel { display: grid; gap: var(--s3); }
 
-  /* ───────── Bottom tab bar (phone) ───────── */
-  .hp-tabs {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    z-index: 70;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    align-items: center;
-    height: calc(var(--hp-tab-h) + env(safe-area-inset-bottom, 0px));
-    padding: 6px var(--s2) env(safe-area-inset-bottom, 0px);
-    background: rgba(8, 12, 26, 0.94);
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
-    border-top: 1px solid var(--hp-border);
-    box-shadow: 0 -10px 30px rgba(0,0,0,.4);
-  }
-  .hp-tab {
-    height: 100%;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px;
-    color: var(--hp-text-3);
-    font: 600 11px/1 var(--hp-font-body);
-    -webkit-tap-highlight-color: transparent;
-    min-width: 0;
-  }
-  .hp-tab-ico {
-    width: 48px; height: 28px;
-    display: grid; place-items: center;
-    border-radius: 999px;
-    transition: background .2s;
-  }
-  .hp-tab.is-active { color: #c7d2fe; }
-  .hp-tab.is-active .hp-tab-ico { background: rgba(99,102,241,.2); }
-  .hp-tab:active .hp-tab-ico { background: rgba(255,255,255,.08); }
-  .hp-fab-wrap { display: flex; justify-content: center; align-items: center; height: 100%; }
-  .hp-fab {
-    width: 56px; height: 56px;
-    margin-top: -28px;
-    display: grid; place-items: center;
-    border-radius: 18px;
-    border: 4px solid #030712;
-    background: var(--hp-grad);
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 10px 26px rgba(99,102,241,.55);
-    -webkit-tap-highlight-color: transparent;
-    transition: transform .15s;
-  }
-  .hp-fab:active { transform: scale(.92); }
-
-  /* =====================================================
-     ≥ 640px : card grids
-     ===================================================== */
+  /* ≥ 640px : 2 cards per row */
   @media (min-width: 640px) {
     .hp-rail {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: var(--s4);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--s3);
       overflow: visible;
       scroll-snap-type: none;
       padding-bottom: 0;
     }
     .hp-rail > * { max-width: none; }
-
     .hp-people {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -412,19 +273,14 @@ const styles = `
       padding-bottom: 0;
     }
     .hp-person { flex: initial; }
-
     .hp-hist { grid-template-columns: 144px minmax(0, 1fr) auto; }
     .hp-hist .btn { grid-column: auto; width: auto; }
-
     .hp-hero { padding: var(--s6); }
   }
 
-  /* =====================================================
-     ≥ 768px : mobile chrome off, 2-col hero, stats on
-     ===================================================== */
-  @media (min-width: 768px) {
-    .hp-top, .hp-tabs { display: none; }
-    .hp-root { padding-bottom: var(--s7); gap: var(--s6); }
+  /* ≥ 900px : always 3 cards per row, 2-col hero + stats */
+  @media (min-width: 900px) {
+    .hp-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .hp-hero {
       grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
       align-items: stretch;
@@ -433,11 +289,9 @@ const styles = `
     .hp-stats { display: flex; }
     .hp-hero-actions {
       padding: var(--s5);
-      border-radius: var(--r-lg);
+      border-radius: var(--hr-lg);
       background: rgba(3, 7, 18, .45);
       border: 1px solid var(--hp-border);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
     .hp-head h2 { font-size: 22px; }
     .hp-aside .hp-hist-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -445,20 +299,17 @@ const styles = `
     .hp-aside .hp-hist .btn { grid-column: 1 / -1; width: 100%; }
   }
 
-  /* =====================================================
-     ≥ 1100px : laptop — main feed + sticky sidebar
-     ===================================================== */
-  @media (min-width: 1100px) {
+  /* ≥ 1280px : main feed + sticky sidebar */
+  @media (min-width: 1280px) {
     .hp-hero { padding: 40px; }
     .hp-layout {
       grid-template-columns: minmax(0, 1fr) 340px;
-      gap: var(--s6);
       align-items: start;
     }
     .hp-aside {
       position: sticky;
-      top: var(--s5);
-      max-height: calc(100vh - 48px);
+      top: 88px;
+      max-height: calc(100vh / var(--ui-zoom, 1) - 112px);
       overflow-y: auto;
       scrollbar-width: none;
     }
@@ -469,28 +320,21 @@ const styles = `
     .hp-person { flex: initial; }
   }
 
-  /* Large monitors */
-  @media (min-width: 1700px) {
+  @media (min-width: 1600px) {
     .hp-layout { grid-template-columns: minmax(0, 1fr) 380px; }
-    .hp-rail { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
   }
 
-  /* Tight phones */
   @media (max-width: 380px) {
     .hp-hero { padding: var(--s4); }
-    .hp-tab { font-size: 10px; }
-    .hp-tab-ico { width: 40px; }
-    .hp-hist { grid-template-columns: 96px minmax(0, 1fr); }
   }
 
-  /* Touch: no sticky hover */
   @media (hover: none) {
     .hp-btn:hover { transform: none; box-shadow: 0 6px 20px rgba(99,102,241,.35); }
     .hp-hist:hover, .hp-person:hover { background: var(--hp-surface); border-color: var(--hp-border); }
   }
   @media (prefers-reduced-motion: reduce) {
     .hp-badge i { animation: none; }
-    .hp-btn, .hp-fab, .hp-hist, .hp-person, .hp-tab-ico { transition: none; }
+    .hp-btn, .hp-hist, .hp-person { transition: none; }
   }
 `;
 
@@ -520,15 +364,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-function HomeGlyph({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 10.5 12 3l9 7.5" />
-      <path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5" />
-    </svg>
   );
 }
 
@@ -562,22 +397,6 @@ export default function Home() {
   return (
     <div className="hp-root">
       <style>{styles}</style>
-
-      {/* ───────── Mobile top bar ───────── */}
-      <header className="hp-top">
-        <Link to="/" className="hp-brand" aria-label="MovieFlex Home">
-          <span className="hp-brand-mark" aria-hidden="true">▶</span>
-          MovieFlex
-        </Link>
-        <div className="hp-top-actions">
-          <Link to="/discover" className="hp-icon-btn" aria-label="Discover rooms">
-            <Icon name="compass" size={18} />
-          </Link>
-          <span className="hp-me" aria-label="Your profile">
-            {user?.displayName?.[0]?.toUpperCase() ?? '?'}
-          </span>
-        </div>
-      </header>
 
       {/* ───────── Hero ───────── */}
       <section className="hp-hero" aria-label="Start watching">
@@ -738,31 +557,6 @@ export default function Home() {
           </Section>
         </aside>
       </div>
-
-      {/* ───────── Mobile bottom tab bar ───────── */}
-      <nav className="hp-tabs" aria-label="Primary">
-        <Link to="/" className="hp-tab is-active" aria-current="page">
-          <span className="hp-tab-ico"><HomeGlyph /></span>
-          Home
-        </Link>
-        <Link to="/discover" className="hp-tab">
-          <span className="hp-tab-ico"><Icon name="compass" size={20} /></span>
-          Discover
-        </Link>
-        <div className="hp-fab-wrap">
-          <button type="button" className="hp-fab" onClick={() => openCreate()} aria-label="Create watch party">
-            <Icon name="plus" size={24} />
-          </button>
-        </div>
-        <Link to="/rooms" className="hp-tab">
-          <span className="hp-tab-ico"><Icon name="users" size={20} /></span>
-          Rooms
-        </Link>
-        <Link to="/history" className="hp-tab">
-          <span className="hp-tab-ico"><Icon name="history" size={20} /></span>
-          History
-        </Link>
-      </nav>
     </div>
   );
 }
